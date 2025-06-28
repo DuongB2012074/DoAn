@@ -4,6 +4,7 @@ import pytest
 import pandas as pd
 from app import app
 import train_model
+from train_core import load_and_prepare_data, models
 
 
 def test_home_route():

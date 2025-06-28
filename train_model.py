@@ -1,42 +1,10 @@
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import KNeighborsClassifier
+# ChayDoAn/train_model.py
 import tkinter as tk
 from tkinter import ttk, messagebox
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pickle
-
-def load_and_prepare_data():
-    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data"
-    columns = [
-        'class', 'cap-shape', 'cap-surface', 'cap-color', 'bruises', 'odor',
-        'gill-attachment', 'gill-spacing', 'gill-size', 'gill-color',
-        'stalk-shape', 'stalk-root', 'stalk-surface-above-ring',
-        'stalk-surface-below-ring', 'stalk-color-above-ring',
-        'stalk-color-below-ring', 'veil-type', 'veil-color', 'ring-number',
-        'ring-type', 'spore-print-color', 'population', 'habitat'
-    ]
-    df = pd.read_csv(url, header=None, names=columns)
-
-    replace_map = {}
-    if df['stalk-root'].isin(['?']).any():
-        mode = df['stalk-root'][df['stalk-root'] != '?'].mode()[0]
-        df['stalk-root'] = df['stalk-root'].replace('?', mode)
-        replace_map['stalk-root'] = mode
-
-    label_encoders = {}
-    for col in df.columns:
-        le = LabelEncoder()
-        df[col] = le.fit_transform(df[col])
-        label_encoders[col] = le
-
-    return df, label_encoders, replace_map
+from train_core import load_and_prepare_data, models
 
 def train_and_display():
     acc_dict = {}
@@ -46,13 +14,18 @@ def train_and_display():
     best_model_score = 0
     best_model_object = None
 
+    df, label_encoders, replace_map = load_and_prepare_data()
+    X = df.drop('class', axis=1)
+    y = df['class']
+
     for name, model in models.items():
         acc_sum = 0
         miss_sum = 0
         for i in range(10):
-            X_train_i, X_test_i, y_train_i, y_test_i = train_test_split(
-                X, y, test_size=0.2, random_state=i
-            )
+            from sklearn.model_selection import train_test_split
+            from sklearn.metrics import accuracy_score
+
+            X_train_i, X_test_i, y_train_i, y_test_i = train_test_split(X, y, test_size=0.2, random_state=i)
             model.fit(X_train_i, y_train_i)
             y_pred_i = model.predict(X_test_i)
             acc_i = accuracy_score(y_test_i, y_pred_i)
@@ -75,6 +48,7 @@ def train_and_display():
     with open("best_model.pkl", "wb") as f:
         pickle.dump((best_model_object, label_encoders, replace_map), f)
 
+    # Vẽ biểu đồ, hiển thị GUI
     for widget in chart_frame.winfo_children():
         widget.destroy()
 
@@ -95,32 +69,18 @@ def train_and_display():
 
     messagebox.showinfo("Hoàn tất", f"✅ Đã lưu mô hình tốt nhất: {best_model_name} với độ chính xác trung bình: {best_model_score:.4f}")
 
-# Load và chuẩn bị dữ liệu
-df, label_encoders, replace_map = load_and_prepare_data()
-X = df.drop('class', axis=1)
-y = df['class']
-
-models = {
-    "Random Forest": RandomForestClassifier(),
-    "Naive Bayes": GaussianNB(),
-    "KNN": KNeighborsClassifier()
-}
-
-# Giao diện Tkinter
+# GUI:
 root = tk.Tk()
 root.title("Huấn luyện mô hình nhận dạng nấm")
 
-# Khung trên
 top_frame = tk.Frame(root)
 top_frame.pack(pady=10)
 btn_train = tk.Button(top_frame, text="Huấn luyện mô hình", command=train_and_display)
 btn_train.pack(side=tk.LEFT, padx=5)
 
-# Biểu đồ
 chart_frame = tk.Frame(root)
 chart_frame.pack(padx=10, pady=10)
 
-# Thống kê
 stat_frame = tk.LabelFrame(root, text="Bảng thống kê")
 stat_frame.pack(padx=10, pady=10)
 
