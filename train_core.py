@@ -1,5 +1,5 @@
-# ChayDoAn/train_core.py
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
@@ -34,8 +34,17 @@ def load_and_prepare_data():
 
     return df, label_encoders, replace_map
 
+# Huấn luyện để lấy số mẫu → cập nhật giá trị k cho KNN
+df_for_k, _, _ = load_and_prepare_data()
+X_for_k = df_for_k.drop('class', axis=1)
+k = int(np.sqrt(len(X_for_k)))
+
 models = {
     "Random Forest": RandomForestClassifier(),
     "Naive Bayes": GaussianNB(),
-    "KNN": KNeighborsClassifier()
+    "KNN": KNeighborsClassifier(n_neighbors=k)
 }
+if __name__ == "__main__":
+    df, encoders, _ = load_and_prepare_data()
+    print("Số mẫu:", len(df))
+    print("KNN đang dùng k =", models["KNN"].n_neighbors)
